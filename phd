@@ -365,7 +365,7 @@ EOF
     exit 1
   fi
 
-  if ! find_pub "$0"; then
+  if ! find_pub "$pubkey"; then
     ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
     exit 1
   fi
@@ -441,6 +441,8 @@ EOF
 
   read -rp "Press enter now to open Overleaf..."
   open "$OVERLEAF_URL"
+
+  ansi $ANSI_GREEN "Done! Your paper '$oldpubkey' was cloned to '$newpubkey'."
 }
 
 renamepub ()
@@ -685,10 +687,10 @@ removing all comments and consolidating all .tex files (using \input) into a
 single file, main.tex. Zips these files up ready to be uploaded to arXiv.
 EOF
   local pubkey=$1
-  if ! pubkey_valid "$pubkey"; then
+  if ! find_pub "$pubkey"; then
+    ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
     exit 1
   fi
-  find_pub "$oldpubkey"
   local pubdir="$find_pub_retval"
 
   local arxiv_dir="$PHD_PAPERSDIR/arxiv/$pubkey"
