@@ -246,7 +246,7 @@ EOF
   PHD_CONFIG="$PHD_SCRIPTDIR/config"
   setup
 
-  ansi $ANSI_BOLD "(5/$steps) Logging you into GitHub CLI. Refer to GitHub CLI's steps..."
+  ansi $ANSI_BOLD "(5/$steps) Logging you into GitHub CLI..."
   gh auth login
 
   ansi $ANSI_BOLD "(6/$steps) Linking phd to /usr/local/bin..."
@@ -381,12 +381,11 @@ EOF
   ansi $ANSI_BOLD "Creating a new repo '$newpubkey' with flag 'inprogress'..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$newpubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
-  unchdir
-
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
     exit 1
   fi
+  unchdir
 
   ansi $ANSI_BOLD "Copying files from '$oldpubkey' to '$newpubkey'..."
   rsync -avq --exclude='.git' "$pubdir/" "$new_pubdir"
@@ -467,7 +466,6 @@ EOF
 
   ansi $ANSI_BOLD "Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
   mv "$new_pubdir/$oldpubkey.tex" "$new_pubdir/$newpubkey.tex"
-
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename '$oldpubkey.tex' to '$newpubkey.tex' command. Please report this." >&2
     exit 1
@@ -557,33 +555,44 @@ EOF
   ansi $ANSI_BOLD "Creating a new repo '$pubkey'..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$pubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
-  unchdir
-
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
     exit 1
   fi
+  unchdir
 
   ansi $ANSI_GREEN "Created '$pubkey' on GitHub and cloned under '$PHD_PAPERSDIR/inprogress."
 
-  ansi $ANSI_BOLD "Renaming template 'main.tex' to '$pubkey.tex'..."
+  ansi $ANSI_BOLD "Pulling down contents of '$pubkey' from GitHub..."
   chdir "$PHD_PAPERSDIR/inprogress/$pubkey"
-  mv main.tex "$pubkey.tex"
-  unchdir
-
+  git pull origin master
   if [[ $? -ne 0 ]]; then
-    ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$newpubkey.tex' command. Please report this." >&2
+    ansi $ANSI_RED "ERROR: Could not pull contents of repo '$pubkey.tex'. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Renaming template 'main.tex' to '$pubkey.tex'..."
+  mv main.tex "$pubkey.tex"
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$pubkey.tex' command. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Removing 'README.md'..."
+  mv main.tex "$pubkey.tex"
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$pubkey.tex' command. Please report this." >&2
     exit 1
   fi
 
   ansi $ANSI_BOLD "Commiting change and pushing to GitHub..."
   git commit -am "Rename 'main.tex' to '$pubkey.tex'"
   git push origin master
-
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not push changes to GitHub. Please report this." >&2
     exit 1
   fi
+  unchdir
 
   ansi $ANSI_BOLD "Please import repo '$pubkey' into a new Overleaf project"
   cat <<- EOF
@@ -595,6 +604,8 @@ EOF
 
   read -rp "Press enter now to open Overleaf..."
   open "$OVERLEAF_URL"
+
+  ansi $ANSI_GREEN "Done! Please refer to https://github.com/alexcu/papers-template on how to use the template."
 }
 
 flagpub ()
@@ -674,12 +685,11 @@ EOF
   chdir "$pubdir"
   export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
   "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/^\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
-  unchdir
-
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not compile merged TeX file. Please report this." >&2
     exit 1
   fi
+  unchdir
 
   ansi $ANSI_BOLD "arXiv requires all .bbl files to be added for each .bib file"
   local bib_files
@@ -721,12 +731,11 @@ EOF
   ansi $ANSI_BOLD "Preparing ZIP to be uploaded into arXiv..."
   chdir "$arxiv_dir"
   zip -r "$arxiv_zip" .
-  unchdir
-
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not ZIP contents for arXiv. Please report this." >&2
     exit 1
   fi
+  unchdir
 
   ansi $ANSI_GREEN "Prepared $arxiv_zip for submission to arXiv."
   echo "You may need to make minor modifications to your files if arXiv finds issues."
