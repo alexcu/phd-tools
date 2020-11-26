@@ -722,10 +722,10 @@ EOF
 
   ansi $ANSI_BOLD "(3/$steps) Merging all TeX files into '$pubkey.tex' with all comments stripped..."
 
-  local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
   chdir "$pubdir"
-  export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
-  "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/^\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
+  local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
+  export PHD_RECUSRIVE_INPUT_AWK=\"$recursiveinputawk\"
+  "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not compile merged TeX file. Please report this." >&2
     exit 1
@@ -958,8 +958,11 @@ EOF
   local texcountpl="$PHD_SCRIPTDIR/texcount.pl"
   local texfile=$1
 
+  find_pub "$texfile" # treat input as pubkey...
+  local pubdir="$find_pub_retval"
+
   if [[ ! -f "$texfile" ]]; then
-    texfile="$PHD_PAPERSDIR/$texfile"
+    texfile="$pubdir/$texfile.tex"
     if [[ ! -f "$texfile" ]]; then
       ansi $ANSI_RED "ERROR: Cannot find file at $texfile." >&2
       exit 1
