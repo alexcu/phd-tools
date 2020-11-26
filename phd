@@ -757,9 +757,9 @@ EOF
 
   read -rp "Press enter once you have placed all $count_bibs .bbl file(s) in $arxiv_dir..."
   while [ ! -f "$arxiv_dir/output.bbl" ]; do
-    ansi $ANSI_ORANGE "WARN: There does not seem to be the default 'output.bbl' downloaded from"
-    ansi $ANSI_ORANGE "      Overleaf in the directory '$arxiv_dir'. Please ensure this is placed"
-    ansi $ANSI_ORANGE "      along with any other .bbl files downloaded from Overleaf (total of $count_bibs)."
+    ansi $ANSI_YELLOW "WARN: There does not seem to be the default 'output.bbl' downloaded from"
+    ansi $ANSI_YELLOW "      Overleaf in the directory '$arxiv_dir'. Please ensure this is placed"
+    ansi $ANSI_YELLOW "      along with any other .bbl files downloaded from Overleaf (total of $count_bibs)."
     read -rp "Press enter once you have placed all $count_bibs .bbl file(s) in $arxiv_dir..."
   done
 
