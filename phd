@@ -437,7 +437,12 @@ pubkey, to a new pubkey. If no new pubkey is provided, then a wizard will help
 you select a new pubkey.
 EOF
   local oldpubkey=$1
-  if find_pub "$0" -ne 0; then
+  if [[ -z "$oldpubkey" ]]; then
+    ansi $ANSI_RED "ERROR: No pubkey provided! See help." >&2
+    exit 1
+  fi
+
+  if ! find_pub "$oldpubkey"; then
     ansi $ANSI_RED "ERROR: No such publication with pubkey '$oldpubkey' exists." >&2
     exit 1
   fi
