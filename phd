@@ -47,12 +47,12 @@ chdir ()
 
 write_config ()
 {
-  cat > "$PHD_SCRIPTDIR/config" <<- EOF
+  cat > "$PHD_CONFIG" <<- EOF
 PHD_GDIR_ID_AUTHSTMTS=$PHD_GDIR_ID_AUTHSTMTS
 PHD_GDIR_ID_MEETINGS=$PHD_GDIR_ID_MEETINGS
 PHD_GDIR_ID_REVIEWS=$PHD_GDIR_ID_REVIEWS
 EOF
-  chmod +x "$PHD_SCRIPTDIR/config"
+  chmod +x "$PHD_CONFIG"
 }
 
 get_gdir_id_retval=0
@@ -130,6 +130,10 @@ setup ()
       ansi $ANSI_RED "ERROR: Could not install coreutils command via brew. Try installing this yourself." >&2
       exit 1
     fi
+  fi
+  if [[ ! -f "$PHD_CONFIG" || ! -x "$PHD_CONFIG" ]]; then
+    echo "Config file missing or not executable. Creating new one at $PHD_CONFIG..."
+    write_config
   fi
 }
 
@@ -943,10 +947,11 @@ main ()
   HELP_ON=1
   PHD_SCRIPTDIR=$(greadlink -f "$(dirname "$0")")
   PHD_BASEDIR=$(greadlink -f "$(dirname "$0")"/..)
+  PHD_CONFIG="${PHD_SCRIPTDIR}/config"
   PHD_PAPERSDIR="${PHD_BASEDIR}/Papers"
   PHD_COMMAND="$1"
 
-  source "${PHD_SCRIPTDIR}/config"
+  source "$PHD_CONFIG"
 
   setup
 
