@@ -726,6 +726,7 @@ EOF
   local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
   export PHD_RECUSRIVE_INPUT_AWK=\"$recursiveinputawk\"
   "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
+  unset PHD_RECUSRIVE_INPUT_AWK
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not compile merged TeX file. Please report this." >&2
     exit 1
@@ -919,7 +920,14 @@ EOF
     fi
   fi
 
-  "$script" "$texfile"
+  export PHD_RECUSRIVE_INPUT_AWK=\"$recursiveinputawk\"
+  local temp=$(mktmp)
+  "$recursiveinputawk" "$texfile" 2> /dev/null > "$temp"
+  unset PHD_RECUSRIVE_INPUT_AWK
+
+  "$script" "$temp"
+
+  rm "$temp"
 }
 
 update ()
@@ -974,7 +982,7 @@ EOF
 
   ansi $ANSI_BOLD "Running word count on $texfile and its subfiles..."
   chdir "$(greadlink -f "$(dirname "$texfile")")"
-  export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
+  export PHD_RECUSRIVE_INPUT_AWK=\"$recursiveinputawk\"
   "$recursiveinputawk" "$texfile" 2> /dev/null | perl "$texcountpl" -col -
   unset PHD_RECUSRIVE_INPUT_AWK
   unchdir
