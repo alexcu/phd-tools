@@ -42,7 +42,12 @@ sethelp ()
 
 chdir ()
 {
-  cd "$1" || (ansi $ANSI_RED "Cannot cd to '$1'. Please report this error." >&2 && exit 1)
+  pushd "$1" || (ansi $ANSI_RED "Cannot work within '$1'. Please report this error." >&2 && exit 1)
+}
+
+unchdir ()
+{
+  popd || (ansi $ANSI_RED "Cannot return to previous working directory. Please report this error." >&2 && exit 1)
 }
 
 write_config ()
@@ -376,6 +381,7 @@ EOF
   ansi $ANSI_BOLD "Creating a new repo '$newpubkey' with flag 'inprogress'..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$newpubkey" -y --private --enable-issues=false --enable-wiki=false --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+  unchdir
 
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
@@ -402,6 +408,7 @@ EOF
   chdir "$new_pubdir"
   git add -am "Intial commit from repo clone of '$pubkey'"
   git push origin master
+  unchdir
 
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not push '$newpubkey' to GitHub. Please report this." >&2
@@ -468,16 +475,15 @@ EOF
 
   ansi $ANSI_BOLD "Updating remote GitHub 'origin' URL for '$newpubkey'"
   chdir "$new_pubdir"
-
   local old_gitremote
   local new_gitremote
   old_gitremote=$(git config --get remote.origin.url)
   new_gitremote=$(echo "$old_gitremote" | gsed -E "s/[^/]+\.git$/$newpubkey\.git/g")
   git remote set-url origin "$new_gitremote"
-
   ansi $ANSI_BOLD "Commiting change of name and pushing to GitHub..."
   git commit -am "Rename '$oldpubkey.tex' to '$newpubkey.tex'"
   git push origin master
+  unchdir
 
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not push changes to GitHub. Please report this." >&2
@@ -551,6 +557,7 @@ EOF
   ansi $ANSI_BOLD "Creating a new repo '$pubkey'..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$pubkey" -y --private --enable-issues=false --enable-wiki=false --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+  unchdir
 
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
@@ -562,6 +569,7 @@ EOF
   ansi $ANSI_BOLD "Renaming template 'main.tex' to '$pubkey.tex'..."
   chdir "$PHD_PAPERSDIR/inprogress/$pubkey"
   mv main.tex "$pubkey.tex"
+  unchdir
 
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$newpubkey.tex' command. Please report this." >&2
@@ -666,6 +674,7 @@ EOF
   chdir "$pubdir"
   export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
   "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/^\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
+  unchdir
 
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not compile merged TeX file. Please report this." >&2
@@ -712,6 +721,7 @@ EOF
   ansi $ANSI_BOLD "Preparing ZIP to be uploaded into arXiv..."
   chdir "$arxiv_dir"
   zip -r "$arxiv_zip" .
+  unchdir
 
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not ZIP contents for arXiv. Please report this." >&2
@@ -868,6 +878,7 @@ EOF
   ansi $ANSI_BOLD "Checking for PhD Tool updates..."
   chdir "$PHD_SCRIPTDIR"
   git pull origin master
+  unchdir
 }
 
 version ()
@@ -908,6 +919,7 @@ EOF
   export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
   "$recursiveinputawk" "$texfile" 2> /dev/null | perl "$texcountpl" -col -
   unset PHD_RECUSRIVE_INPUT_AWK
+  unchdir
 }
 
 help ()
