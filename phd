@@ -42,7 +42,7 @@ sethelp ()
 
 chdir ()
 {
-  cd "$1" || ansi $ANSI_RED "Cannot cd to '$1'. Please report this error." >&2 && exit 1
+  cd "$1" || (ansi $ANSI_RED "Cannot cd to '$1'. Please report this error." >&2 && exit 1)
 }
 
 write_config ()
