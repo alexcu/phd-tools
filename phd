@@ -414,6 +414,12 @@ EOF
 
   ansi $ANSI_BOLD "(4/$steps) Pushing copied files to GitHub under repo '$newpubkey'..."
   chdir "$new_pubdir"
+  # gh repo create does not honour its own config setting!
+  if [[ $(gh config get git_protocol) == "ssh" ]]; then
+    echo "Updating Git remote origin URL to use ssh..."
+    local gh_ssh_url=$(git config --get remote.origin.url | gsed -E "s/https:\/\/github.com\//git@github.com:/g")
+    git remote set-url origin "$gh_ssh_url"
+  fi
   git add .
   git commit -am "Intial commit from repo clone of '$pubkey'"
   git push origin master
