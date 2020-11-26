@@ -478,16 +478,17 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "(3/$steps) Updating remote GitHub 'origin' URL for '$newpubkey'"
   chdir "$new_pubdir"
+  ansi $ANSI_BOLD "(3/$steps) Commiting change of name and pushing to GitHub..."
+  git commit -am "Rename '$oldpubkey.tex' to '$newpubkey.tex'"
+  git push origin master
+
+  ansi $ANSI_BOLD "(4/$steps) Updating remote GitHub 'origin' URL for '$newpubkey'"
   local old_gitremote
   local new_gitremote
   old_gitremote=$(git config --get remote.origin.url)
   new_gitremote=$(echo "$old_gitremote" | gsed -E "s/[^/]+\.git$/$newpubkey\.git/g")
   git remote set-url origin "$new_gitremote"
-  ansi $ANSI_BOLD "(4/$steps) Commiting change of name and pushing to GitHub..."
-  git commit -am "Rename '$oldpubkey.tex' to '$newpubkey.tex'"
-  git push origin master
   unchdir
 
   if [[ $? -ne 0 ]]; then
