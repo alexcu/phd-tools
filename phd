@@ -241,6 +241,7 @@ EOF
 
   ansi $ANSI_BOLD "(6/$steps) Linking phd to /usr/local/bin..."
   ln -nsf "$PHD_SCRIPTDIR/phd" /usr/local/bin/phd
+  chmod +x /usr/local/bin/phd
 
   ansi $ANSI_GREEN "Successfully installed PhD tools!"
   phd help
