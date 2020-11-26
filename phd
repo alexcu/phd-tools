@@ -251,6 +251,7 @@ EOF
   find "$PHD_SCRIPTDIR" ! -name ".*" -type f -exec chmod +x {} \;
 
   ansi $ANSI_GREEN "Successfully installed PhD tools!"
+  unset PHD_INSTALLER
   phd help
 
   return 0
@@ -959,9 +960,8 @@ main ()
   PHD_PAPERSDIR="${PHD_BASEDIR}/Papers"
   PHD_COMMAND="$1"
 
-  source "$PHD_CONFIG"
-
   setup
+  source "$PHD_CONFIG"
 
   for argv in "$@"; do :; done
   local lastarg="$argv"
@@ -1007,8 +1007,8 @@ main ()
   esac
 }
 
-if [[ -z "$PHD_INSTALLER" ]]; then
-  main "$@"
-else
+if [[ -n "$PHD_INSTALLER" ]]; then
   install
+else
+  main "$@"
 fi
