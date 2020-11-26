@@ -920,6 +920,7 @@ EOF
     fi
   fi
 
+  local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
   export PHD_RECUSRIVE_INPUT_AWK=\"$recursiveinputawk\"
   local temp=$(mktemp)
   "$recursiveinputawk" "$texfile" 2> /dev/null > "$temp"
