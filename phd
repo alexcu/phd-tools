@@ -68,7 +68,7 @@ get_gdir_id ()
   local gdrive_website="http://drive.google.com/"
 
   if [[ -n "$parent_folder_name" ]]; then
-    local parent_folder_name_prompt="(under '$parent_folder_name')"
+    local parent_folder_name_prompt=" (under '$parent_folder_name')"
   fi
 
   ansi $ANSI_BOLD "The '$folder_name' folder is not yet known to PhD Tools."
@@ -83,7 +83,7 @@ EOF
 
   open $gdrive_website
 
-  ansi $ANSI_BOLD "\nWhat is URL of the Google Drive Folder named 'Meetings'?"
+  ansi $ANSI_BOLD "\nWhat is URL of the Google Drive Folder named '$folder_name'$parent_folder_name_prompt?"
   cat <<- EOF
 
 Navigate to PhD folder stored within Google Drive and then double-click to the
