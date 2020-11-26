@@ -480,7 +480,7 @@ EOF
 
   chdir "$new_pubdir"
   ansi $ANSI_BOLD "(3/$steps) Commiting change of name and pushing to GitHub..."
-  git add '$newpubkey.tex'
+  git add "$newpubkey.tex"
   git commit -am "Rename '$oldpubkey.tex' to '$newpubkey.tex'"
   git push origin master
 
