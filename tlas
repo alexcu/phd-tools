@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+cat $1 | gsed '/^\s*%/c\%' | egrep -n --color=always "[A-Z]{2,}s?" | less -R

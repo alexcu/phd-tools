@@ -1,0 +1,999 @@
+#!/usr/bin/env bash
+
+PHD_VERSION="0.1"
+
+PHD_GDOC_ID_MEETING_MINUTES=12Y79ci74ykhVJuS7kOQc5ge44owl4E4ntQK8Osy8fRE
+PHD_GDOC_ID_REVIEW_FEEDBACK=1_HWrqVFU-W8_mq_OHjr4h2wzBfMor7yjy3rcX-Cs_JU
+PHD_GHUB_ID_PAPERS_TEMPLATE="https://github.com/alexcu/papers-template"
+PHD_GHUB_TEMPLATE_GIT="https://github.com/alexcu/phd-template.git"
+PHD_GHUB_TOOLS_GIT="https://github.com/alexcu/phd-tools.git"
+
+OVERLEAF_URL="https://www.overleaf.com/project"
+
+ANSI_BOLD=1
+ANSI_ITALIC=3
+ANSI_UNDERLINE=4
+ANSI_RED=31
+ANSI_YELLOW=33
+ANSI_GREEN=32
+ansi ()
+{
+  echo -e "\033[${1}m${*:2}\033[0m";
+}
+
+checkcmd ()
+{
+  if ! command -v "$1" &> /dev/null; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+sethelp ()
+{
+  if [[ "$HELP_ON" -eq 0 ]]; then
+    while read; do
+      echo "$REPLY"
+    done
+    exit 0
+  fi
+}
+
+chdir ()
+{
+  cd "$1" || ansi $ANSI_RED "Cannot cd to '$1'. Please report this error." >&2 && exit 1
+}
+
+write_config ()
+{
+  cat > "$PHD_SCRIPTDIR/config" <<- EOF
+PHD_GDIR_ID_AUTHSTMTS=$PHD_GDIR_ID_AUTHSTMTS
+PHD_GDIR_ID_MEETINGS=$PHD_GDIR_ID_MEETINGS
+PHD_GDIR_ID_REVIEWS=$PHD_GDIR_ID_REVIEWS
+EOF
+  chmod +x "$PHD_SCRIPTDIR/config"
+}
+
+get_gdir_id_retval=0
+get_gdir_id ()
+{
+  local folder_name=$1
+  local parent_folder_name=$2
+  local gdrive_website="http://drive.google.com/"
+
+  if [[ -n "$parent_folder_name" ]]; then
+    local parent_folder_name_prompt="(under '$parent_folder_name')"
+  fi
+
+  ansi $ANSI_BOLD "The '$folder_name' folder is not yet known to PhD Tools."
+cat <<- EOF
+
+PhD Tools will open Google Drive in your web browser and ask you to copy the URL
+of the folder '$folder_name'$parent_folder_name_prompt. Once Google Drive is opened, please return back to
+your terminal for further instructions...
+
+EOF
+  read -rp "Press enter now to open Google Drive..."
+
+  open $gdrive_website
+
+  ansi $ANSI_BOLD "\nWhat is URL of the Google Drive Folder named 'Meetings'?"
+  cat <<- EOF
+
+Navigate to PhD folder stored within Google Drive and then double-click to the
+'$folder_name' folder$parent_folder_name_prompt. Then copy the URL from the
+address bar and paste it at the prompt below.
+
+EOF
+  while [[ -z "$gdir_url" ]]; do
+    read -rp "Please enter the URL to the '$folder_name' folder$parent_folder_name_prompt: " gdir_url
+  done
+
+  get_gdir_id_retval=$(basename "$gdir_url")
+}
+
+copy_gdoc_template ()
+{
+  local source_template_id=$1
+  local destination_folder_id=$2
+  local title=$3
+  local url="https://docs.google.com/document/d/$source_template_id/copy?id=$source_template_id&copyCollaborators=false&copyComments=false&includeResolvedCommentsOnCopy=false&title=$title&copyDestination=$destination_folder_id"
+
+  read -rp "About to create a new document named '$title'. Press enter to continue..."
+  open "$url"
+}
+
+setup ()
+{
+  if ! checkcmd "brew"; then
+    echo "Homembrew missing. Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+    if checkcmd "brew" -ne 0; then
+      ansi $ANSI_RED "ERROR: Homebrew didn't install properly. Try installing this yourself." >&2
+      exit 1
+    fi
+  fi
+  if ! checkcmd "gh"; then
+    echo "GitHub CLI missing. Installing GitHub CLI via Homebrew..."
+    ansi $ANSI_ORANGE "WARN: Please ensure you have a GitHub account!"
+    brew install gh
+    if [[ "$?" -ne 0 ]]; then
+      ansi $ANSI_RED "ERROR: Could not install gh command via brew. Try installing this yourself." >&2
+      exit 1
+    fi
+  fi
+  if ! checkcmd "greadlink"; then
+    echo "Coreutils missing. Installing coreutils via Homebrew..."
+    brew install coreutils
+    if [[ "$?" -ne 0 ]]; then
+      ansi $ANSI_RED "ERROR: Could not install coreutils command via brew. Try installing this yourself." >&2
+      exit 1
+    fi
+  fi
+}
+
+install ()
+{
+  local gdfs_mount_dir="/Volumes/GoogleDrive/My Drive"
+  local gbas_mount_dir="$HOME/Google Drive"
+
+  local gdfs_download_url="https://dl.google.com/drive-file-stream/googledrivefilestream.dmg"
+  local gbas_download_url="https://dl.google.com/drive/InstallBackupAndSync.dmg"
+
+  local gdfs_brew_formula="google-drive-file-stream"
+  local gbas_brew_formula="google-backup-and-sync"
+
+  local gdfs_exists=1
+  local gbas_exists=1
+
+  local steps=6
+
+  ansi $ANSI_BOLD "(1/$steps) Checking if Google Drive File System (GDFS) is mounted..."
+  if [[ ! -d "$gdfs_mount_dir" ]]; then
+    ansi $ANSI_YELLOW "WARN: Google Drive File System (GDFS) does not seem to be mounted in the default"
+    ansi $ANSI_YELLOW "      directory of '$gdfs_mount_dir'. Please ensure you have"
+    ansi $ANSI_YELLOW "      installed GDFS and are logged into your GSuite account, or use GB&S."
+  else
+    ansi $ANSI_GREEN "OKAY: GDFS is mounted at $gdfs_mount_dir."
+    local gdfs_exists=0
+  fi
+  ansi $ANSI_BOLD "(2/$steps) Checking for Google Backup and Sync (GB&S) directory..."
+  if [[ ! -d "$gbas_mount_dir" ]]; then
+    ansi $ANSI_YELLOW "WARN: Google Backup and Sync (GB&S) does not seem to be mounted in the default"
+    ansi $ANSI_YELLOW "      directory of '$gbas_mount_dir'. Please ensure you have"
+    ansi $ANSI_YELLOW "      installed GB&S and are logged into your Google account, or use GDFS."
+  else
+    ansi $ANSI_GREEN "OKAY: GB&S is mounted at ~/GoogleDrive."
+    local gbas_exists=0
+  fi
+  if [[ "$gdfs_exists" -eq 1 && "$gbas_exists" -eq 1 ]]; then
+    ansi $ANSI_RED "ERROR: You don't seem to have either GDFS or GB&S installed. You need this to" >&2
+    ansi $ANSI_RED "       create relevant Google Docs." >&2
+    cat >&2 <<- EOF
+       Please install either one at the following first, then try again.
+
+       Download URLs:
+
+       - GDFS: $gdfs_download_url
+       - GB&S: $gbas_download_url
+
+       Or install via Homebrew:
+
+       - GDFS: brew install $gdfs_brew_formula
+       - GB&S: brew install $gbas_brew_formula
+
+       Note that GDFS requires a GSuite Team, while GB&S is free up to 15GB.
+EOF
+    exit 1
+  fi
+
+  PHD_BASEDIR=""
+  local confirm=""
+
+  while [[ ! "$confirm" == "y" ]]; do
+    ansi $ANSI_BOLD "(3/$steps) Where do you want to store your PhD base directory?"
+    cat <<- EOF
+
+PhD Tools works with Google Drive and needs to be in a GDFS or GB&S directory.
+E.g., '$gdfs_mount_dir/PhD' or '$gbas_mount_dir/PhD'.
+
+EOF
+    if [[ "$gdfs_exists" -eq 0 ]]; then
+      read -rp "Enter a PhD base directory now ['$gdfs_mount_dir/PhD']: " PHD_BASEDIR
+      PHD_BASEDIR=${PHD_BASEDIR:-"$gdfs_mount_dir/PhD"}
+    elif [[ "$gbas_exists" -eq 0 ]]; then
+      read -rp "Enter a PhD base directory now ['$gbas_mount_dir/PhD']: " PHD_BASEDIR
+      PHD_BASEDIR=${PHD_BASEDIR:-"$gbas_mount_dir/PhD"}
+    fi
+
+    if [[ -d "$PHD_BASEDIR" ]]; then
+      ansi $ANSI_YELLOW "WARN: There is already a directory at $PHD_BASEDIR. It *will* be deleted!"
+    fi
+
+    read -rp "Your PhD base directory is '$PHD_BASEDIR'. Are you sure this is correct (y/n)? " confirm
+  done
+
+  PHD_SCRIPTDIR="$PHD_BASEDIR/Scripts"
+
+  rm -rf "$PHD_BASEDIR"
+  git clone --depth=1 --branch=master "$PHD_GHUB_TEMPLATE_GIT" "$PHD_BASEDIR"
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not clone PhD template repo $PHD_GHUB_TEMPLATE_GIT. Try cloning this yourself and report this bug." >&2
+    exit 1
+  fi
+  rm -rf "$PHD_BASEDIR/.git"
+  find "$PHD_BASEDIR" -name "*.keep" -type f -delete
+
+  git clone --depth=1 --branch=master "$PHD_GHUB_TOOLS_GIT" "$PHD_SCRIPTDIR"
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not clone PhD tools repo $PHD_GHUB_TOOLS_GIT. Try cloning this yourself and report this bug." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_GREEN "OKAY: Set up your PhD base directory at '$PHD_BASEDIR'."
+
+  ansi $ANSI_BOLD "(4/$steps) Installing necessary software..."
+  setup
+
+  ansi $ANSI_BOLD "(5/$steps) Logging you into GitHub CLI. Refer to GitHub CLI's steps..."
+  gh auth login
+
+  ansi $ANSI_BOLD "(6/$steps) Linking phd to /usr/local/bin..."
+  ln -nsf "$PHD_SCRIPTDIR/phd" /usr/local/bin/phd
+
+  ansi $ANSI_GREEN "Successfully installed PhD tools!"
+  phd help
+
+  return 0
+}
+
+find_pub_retval=""
+find_pub ()
+{
+  local pubkey=$1
+  if [[ -z "$pubkey" ]]; then
+    return 1
+  fi
+  find_pub_retval=$(find "$PHD_PAPERSDIR" -name "$pubkey")
+  return 0
+}
+
+pubkey_valid ()
+{
+  local pubkey=$1
+  existing_pubkeys=$("find $PHD_PAPERSDIR -name $pubkey 2> /dev/null" | wc -l)
+  if [[ existing_pubkeys -gt 0 ]]; then
+    ansi $ANSI_RED "ERROR: A pubkey with a name '$pubkey' already exists. Please try again." >&2
+    echo "Location: $(find "$PHD_PAPERSDIR" -name "$pubkey")."
+    return 1
+  fi
+  return 0
+}
+
+pubkeywizard_retval=""
+pubkeywizard ()
+{
+  while [[ -z "$result" ]]; do
+    local venue=""
+    local year=""
+    local suffix=""
+    local result=""
+    local confirm=""
+
+    while [[ -z "$venue" ]]; do
+      ansi $ANSI_BOLD "(1/3) What is the abbreviation of the venue are you intending to publish at?"
+      cat << EOF
+For example, this could be 'FSE' for Foundations of Software Engineering. If the
+intended venue does not have an abbreviation (e.g., 'IEEE Software') then type
+in the full name of the venue. If you do not have a venue yet, use 2–3 keywords
+unique to your PhD instead (e.g., 'systematic review').
+
+EOF
+      read -rp "Enter in an abbreviation: " venue
+    done
+
+    ansi $ANSI_BOLD "(2/3) Are you publishing at the same venue twice this year?"
+    cat << EOF
+For example, if you are publishing at two different tracks at the same venue,
+such as a demonstrations track and a industry track, you can enter in 'demo' and
+'industry' here. Or if you are submitting two papers to the same track, you can
+add in an additional keyword here (e.g., 'slr').
+
+EOF
+    read -rp "Enter in a suffix if needed, or hit enter now to leave blank: " suffix
+
+    while [[ -z "$year" ]]; do
+      ansi $ANSI_BOLD "(3/3) What year do you intend to publish this work?"
+      cat << EOF
+If you aren't sure yet (e.g., you aren't sure which venue you are publishing at)
+then simply enter the current year.
+
+EOF
+      read -rp "Enter in a year: " year
+    done
+
+    if [[ -z "$suffix" ]]; then
+      pubkey="$venue$year"
+    else
+      pubkey="$venue-$suffix$year"
+    fi
+    pubkey=$(echo "$pubkey" | tr "[:upper:]" "[:lower:]" | tr ' ' '-')
+
+    if pubkey_valid "$pubkey" -ne 0; then
+      exit 1
+    fi
+
+    while [[ -z "$confirm" ]]; do
+      read -rp "Your publication key is '$pubkey'. Do you wish to use this pubkey (y/n)?" confirm
+      if [[ "$confirm" == "y" ]]; then
+        result="$pubkey"
+      fi
+    done
+  done
+  pubkeywizard_retval=$result
+}
+
+clonepub ()
+{
+  sethelp <<- EOF
+Usage: phd clonepub pubkey [newpubkey]
+
+Clones an existing publication repo with the existing publication key, or
+pubkey, as a pubkey. If no new pubkey is provided, then a wizard will help
+you select a new pubkey.
+EOF
+
+  local pubkey=$1
+  if find_pub "$0" -ne 0; then
+    ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
+    exit 1
+  fi
+
+  local newpubkey=$2
+  if [[ -z $newpubkey ]]; then
+    pubkeywizard
+    newpubkey=$pubkeywizard_retval
+  fi
+  if pubkey_valid "$newpubkey" -ne 0; then
+    exit 1
+  fi
+
+  find_pub "$pubkey"
+  local pubdir="$find_pub_retval"
+  local new_pubdir="$find_pub_retval/../$newpubkey"
+
+  ansi $ANSI_BOLD "Creating a new repo '$newpubkey' with flag 'inprogress'..."
+  chdir "$PHD_PAPERSDIR/inprogress"
+  gh repo create "$newpubkey" -y --private --enable-issues=false --enable-wiki=false --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Copying files from '$oldpubkey' to '$newpubkey'..."
+  rsync -avq --exclude='.git' "$pubdir/" "$new_pubdir"
+
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not execute rsync command. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
+  mv "$new_pubdir/$pubkey.tex" "$new_pubdir/$newpubkey.tex"
+
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not remame '$oldpubkey.tex' to '$newpubkey.tex'. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Pushing copied files to GitHub under repo '$newpubkey'..."
+  chdir "$new_pubdir"
+  git add -am "Intial commit from repo clone of '$pubkey'"
+  git push origin master
+
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not push '$newpubkey' to GitHub. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_GREEN "Pushed copied files to '$newpubkey'!"
+  ansi $ANSI_BOLD "Please import repo '$newpubkey' into a new Overleaf project"
+  cat <<- EOF
+To continue, import the repository from GitHub into Overleaf by clicking on the
+'New Project' button in the top left, then 'Import from GitHub' and search for
+the repository named '$newpubkey'.
+
+EOF
+
+  read -rp "Press enter now to open Overleaf..."
+  open "$OVERLEAF_URL"
+}
+
+renamepub ()
+{
+  sethelp <<- EOF
+Usage: phd renamepub oldpubkey [newpubkey]
+
+Renames an existing publication repo with the existing publication key, or
+pubkey, to a new pubkey. If no new pubkey is provided, then a wizard will help
+you select a new pubkey.
+EOF
+  local oldpubkey=$1
+  if find_pub "$0" -ne 0; then
+    ansi $ANSI_RED "ERROR: No such publication with pubkey '$oldpubkey' exists." >&2
+    exit 1
+  fi
+
+  local newpubkey=$2
+  if [[ -z $newpubkey ]]; then
+    pubkeywizard
+    newpubkey=$pubkeywizard_retval
+  fi
+  if pubkey_valid "$newpubkey" -ne 0; then
+    exit 1
+  fi
+
+  find_pub "$oldpubkey"
+  local old_pubdir="$find_pub_retval"
+  local new_pubdir="$find_pub_retval/../$newpubkey"
+
+  ansi $ANSI_BOLD "Renaming '$oldpubkey' to '$newpubkey' locally..."
+  echo "mv $old_pubdir $new_pubdir"
+  mv "$old_pubdir" "$new_pubdir"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not execute mv command. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
+  mv "$new_pubdir/$oldpubkey.tex" "$new_pubdir/$newpubkey.tex"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not rename '$oldpubkey.tex' to '$newpubkey.tex' command. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Updating remote GitHub 'origin' URL for '$newpubkey'"
+  chdir "$new_pubdir"
+
+  local old_gitremote
+  local new_gitremote
+  old_gitremote=$(git config --get remote.origin.url)
+  new_gitremote=$(echo "$old_gitremote" | gsed -E "s/[^/]+\.git$/$newpubkey\.git/g")
+  git remote set-url origin "$new_gitremote"
+
+  ansi $ANSI_BOLD "Commiting change of name and pushing to GitHub..."
+  git commit -am "Rename '$oldpubkey.tex' to '$newpubkey.tex'"
+  git push origin master
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not push changes to GitHub. Please report this." >&2
+    exit 1
+  fi
+
+  local gh_repo
+  local gh_open_settings
+  gh_repo=$(echo "$old_gitremote" |  gsed -E "s/^[^:]+:([^:]+)\.git$/\1/g")
+  gh_open_settings="https://github.com/$gh_repo/settings"
+  ansi $ANSI_BOLD "Please update GitHub settings to rename the repo '$oldpubkey' to '$newpubkey'"
+  cat <<- EOF
+To continue, you must open up GitHub's settings page for the old repo named
+'$oldpubkey' and manually change its repo name to '$newpubkey'.
+
+If you are not sure how to rename a GitHub repo, please refer to:
+https://bit.ly/2JaAKYm.
+
+EOF
+  read -rp "Press enter to open the GitHub settings page for this repo..."
+  open "$gh_open_settings"
+
+  ansi $ANSI_BOLD "Please rename Overleaf project from '$oldpubkey' to '$newpubkey'"
+  cat <<- EOF
+To continue, you must open up the Overleaf Dashboard, click on the checkbox
+next to the project listed as '$oldpubkey', then click 'More' (in the top
+righthand corner), and then click 'Rename'. Please ensure you set the new name
+to '$newpubkey'.
+
+For more details on how to rename an Overleaf project, please refer to:
+https://bit.ly/2HBakyi.
+
+EOF
+  read -rp "Press enter now to open Overleaf..."
+  open "$OVERLEAF_URL"
+}
+
+newpub ()
+{
+  sethelp <<- EOF
+Usage: phd newpub [pubkey]
+
+Sets up a new repo and relevant subdirectories for a new paper you wish to work
+on. A publication key (pubkey) is a unique identifier for a publication. Follow
+the below guidelines to form a pubkey:
+
+  1. Use the abbreviation of your venue lowercased and, if applicable
+     hyphenated (e.g., 'icse' or 'ieee-software'). If you don't have an intended
+     venue yet, think of the primary contribution of your paper and hyphenate it
+     (e.g., 'systematic-review').
+  2. Append any additional info if you plan to submit two papers at the same
+     venue (e.g., a demonstrations track could have a suffix 'demo').
+  3. Use the year the intended publication will be published (e.g., '2020'). Use
+     the current year if you do not have an intended publication year (yet).
+  4. Hyphenate (1) and (2) if applicable, and add the year at the end
+     (e.g., 'ieee-software2020' or 'icse-demo2020').
+
+If no pubkey is provided, then a small wizard will help you generate one. Once
+you have an intended venue, it is advised you update it.
+EOF
+  local pubkey=$1
+  if [[ -z $pubkey ]]; then
+    pubkeywizard
+    pubkey=$pubkeywizard_retval
+  fi
+
+  if pubkey_valid "$pubkey" -ne 0; then
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Creating a new repo '$pubkey'..."
+  chdir "$PHD_PAPERSDIR/inprogress"
+  gh repo create "$pubkey" -y --private --enable-issues=false --enable-wiki=false --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+
+  if [[ "$?" -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_GREEN "Created '$pubkey' on GitHub and cloned under '$PHD_PAPERSDIR/inprogress."
+
+  ansi $ANSI_BOLD "Renaming template 'main.tex' to '$pubkey.tex'..."
+  chdir "$PHD_PAPERSDIR/inprogress/$pubkey"
+  mv main.tex "$pubkey.tex"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$newpubkey.tex' command. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Commiting change and pushing to GitHub..."
+  git commit -am "Rename 'main.tex' to '$pubkey.tex'"
+  git push origin master
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not push changes to GitHub. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Please import repo '$pubkey' into a new Overleaf project"
+  cat <<- EOF
+To continue, import the repository from GitHub into Overleaf by clicking on the
+'New Project' button in the top left, then 'Import from GitHub' and search for
+the repository named '$pubkey'.
+
+EOF
+
+  read -rp "Press enter now to open Overleaf..."
+  open "$OVERLEAF_URL"
+}
+
+flagpub ()
+{
+  sethelp <<- EOF
+Usage: phd flagpub pubkey [abandonded|inprogress|published|rejected]
+
+Moves the publication with the given pubkey to the new directory to indicate its
+status of publication.
+EOF
+  local pubkey=$1
+  local flag=$2
+
+  if pubkey_valid "$pubkey" -ne 0; then
+    exit 1
+  fi
+
+  case "$flag" in
+  abandoned)  ;;
+  inprogress) ;;
+  published)  ;;
+  rejected)   ;;
+  *) ansi $ANSI_RED "ERROR: Unknown flag or no flag provided." >&2 && exit 1 ;;
+  esac
+
+  find_pub "$pubkey"
+  local pubdir=find_pub_retval
+  mv $pubdir "$PHD_PAPERSDIR/$flag"
+  ansi $ANSI_GREEN "Moved '$pubkey' to '$flag' papers"
+}
+
+arxivpub ()
+{
+  sethelp <<- EOF
+Usage: phd arxiv pubkey
+
+Prepares the publication with the pubkey provided for submission to arXiv by
+removing all comments and consolidating all .tex files (using \input) into a
+single file, main.tex. Zips these files up ready to be uploaded to arXiv.
+EOF
+  local pubkey=$1
+  if pubkey_valid "$pubkey" -ne 0; then
+    exit 1
+  fi
+  find_pub "$oldpubkey"
+  local pubdir="$find_pub_retval"
+
+  local arxiv_dir="$PHD_PAPERSDIR/arxiv/$pubkey"
+  local arxiv_zip="$PHD_PAPERSDIR/arxiv/$pubkey.zip"
+
+  if [[ -d "$arxiv_dir" || -f "$arxiv_zip" ]]; then
+    ansi $ANSI_YELLOW "WARN: There seems to be an arXiv folder for '$pubkey'."
+    ansi $ANSI_YELLOW "      This *will* be deleted along with any associated ZIPs."
+    read -rp "Press enter to continue, or Ctrl+C to stop..."
+    rm -rf "$arxiv_dir" "$arxiv_zip"
+  fi
+
+  ansi $ANSI_BOLD "Making arXiv directory at $arxiv_dir..."
+  mkdir "$arxiv_dir"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not create directory '$arxiv_dir'. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Copying all non-TeX files to $arxiv_dir from $pubdir..."
+  rsync -avq --exclude='.git' --exclude='*.tex' --exclude='*.bib' "$pubdir/" "$arxiv_dir"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not rsync correctly. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Merging all TeX files into '$pubkey.tex' with all comments stripped..."
+
+  local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
+  chdir "$pubdir"
+  export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
+  "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/^\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not compile merged TeX file. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "arXiv requires all .bbl files to be added for each .bib file"
+  local bib_files
+  local count_bibs
+  bbl_files=$(ls -1 "$pubdir"/*.bib | gsed -E "s/.bib/.bbl/g")
+  count_bibs="$bib_files | wc -l"
+  cat <<-EOF
+You have $count_bibs .bib files. Please open up the project '$pubkey' in
+Overleaf and *recompile* your project. Next, click on the 'Logs & Output Files'
+button (the page icon) next to the 'Recompile' button. Scroll to the bottom of
+the logs. At the bottom righthand corner, click 'Other logs & files' and
+download all $count_bibs of the following .bbl file(s):
+
+$bbl_files
+
+Place the $count_bibs .bbl file(s) into $arxiv_dir. Note that Overleaf will name
+the default bbl file as output.bbl.
+
+EOF
+  read -rp "Press enter now to open Overleaf..."
+  open "$OVERLEAF_URL"
+
+  read -rp "Press enter once you have placed all $count_bibs .bbl file(s) in $arxiv_dir..."
+  while [ ! -f "$arxiv_dir/output.bbl" ]; do
+    ansi $ANSI_ORANGE "WARN: There does not seem to be the default 'output.bbl' downloaded from"
+    ansi $ANSI_ORANGE "      Overleaf in the directory '$arxiv_dir'. Please ensure this is placed"
+    ansi $ANSI_ORANGE "      along with any other .bbl files downloaded from Overleaf (total of $count_bibs)."
+    read -rp "Press enter once you have placed all $count_bibs .bbl file(s) in $arxiv_dir..."
+  done
+
+  ansi $ANSI_BOLD "Renaming default 'output.bbl' to '$pubkey.bbl'..."
+  mv "$arxiv_dir/output.bbl" "$arxiv_dir/$pubkey.bbl"
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not rename 'output.bbl' to '$pubkey.bbl'. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Preparing ZIP to be uploaded into arXiv..."
+  chdir "$arxiv_dir"
+  zip -r "$arxiv_zip" .
+
+  if [[ $? -ne 0 ]]; then
+    ansi $ANSI_RED "ERROR: Could not ZIP contents for arXiv. Please report this." >&2
+    exit 1
+  fi
+
+  ansi $ANSI_GREEN "Prepared $arxiv_zip for submission to arXiv."
+  echo "You may need to make minor modifications to your files if arXiv finds issues."
+  echo "Please ensure you update your changes within $arxiv_dir."
+}
+
+reviewpub ()
+{
+  sethelp <<- EOF
+Usage: phd review pubkey
+
+Prepares a reviewer feedback spreadsheet for the publication with the pubkey
+provided. For instructions on how to break down reviewer feedback using the
+reviewer spreadsheet, please visit the following URL: https://bit.ly/33ebKGF.
+Additionally asks for the .eml file containing the reviewer feedback email for
+record-keeping purposes.
+EOF
+  local pubkey=$1
+  if pubkey_valid "$pubkey" -ne 0; then
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Please drag-and-drop your reviewer email from Outlook/Mail into the 'Reviews' folder."
+  cat <<- EOF
+Keep a record of the email you have recieved with your reviewer feedback on the
+publication '$pubkey'.
+
+If you are using Outlook/Mail for Mac, you can drag and drop the email file out
+from Outlook/Mail and into the 'Reviews' folder. If you are using a web-browser
+client, please try to export an .eml file from the email recieved.
+
+Make sure to rename the .eml file to '$pubkey.eml'.
+
+EOF
+
+  read -rp "Press enter now to open your Reviews folder..."
+  open "$PHD_BASEDIR/Reviews"
+
+  ansi $ANSI_BOLD "Creating copy of reviewer template."
+  if [[ -z $PHD_GDIR_ID_REVIEWS ]]; then
+    get_gdir_id 'Reviews'
+    PHD_GDIR_ID_REVIEWS=$get_gdir_id_retval
+    write_config
+  fi
+
+  copy_gdoc_template "$PHD_GDOC_ID_REVIEW_FEEDBACK" "$PHD_GDIR_ID_REVIEWS" "$pubkey"
+  ansi $ANSI_GREEN "Reviewer feedback spreadsheet opened. Please press the 'Make a copy' button."
+  echo "Please refer to https://bit.ly/33ebKGF for methods on how to break down reviewer feedback."
+}
+
+authorpub ()
+{
+  sethelp <<- EOF
+Usage: phd author pubkey
+
+Prepares an authorship statement document for the publication with the pubkey
+provided. Authorship statements should be made for all publications made with
+co-authors during your PhD candidature. These forms should be signed by all
+authors and at the time of publication acceptance.
+EOF
+  local pubkey=$1
+  if pubkey_valid "$pubkey" -ne 0; then
+    exit 1
+  fi
+
+  ansi $ANSI_BOLD "Creating copy of authorship template."
+  if [[ -z $PHD_GDIR_ID_AUTHSTMTS ]]; then
+    get_gdir_id 'Authorship Statements' 'Admin'
+    PHD_GDIR_ID_AUTHSTMTS=$get_gdir_id_retval
+    write_config
+  fi
+
+  copy_gdoc_template "$PHD_GDOC_ID_MEETING_MINUTES" "$PHD_GDIR_ID_AUTHSTMTS" "$pubkey"
+  ansi $ANSI_GREEN "Authorship statement document opened. Please press the 'Make a copy' button."
+}
+
+phdopen ()
+{
+  sethelp <<- EOF
+Usage: phd open
+
+Opens your PhD Google Drive directory.
+EOF
+  open "$PHD_BASEDIR"
+}
+
+meeting ()
+{
+  sethelp <<- EOF
+Usage: phd meeting [yyyy-dd-mm]
+
+Creates a meeting minute document set to today's date or the date provided.
+EOF
+  local date
+  [[ -z $1 ]] && date=$(date +%F) || date=$1
+
+  ansi $ANSI_BOLD "Creating copy of meeting minutes template."
+  if [[ -z $PHD_GDIR_ID_MEETINGS ]]; then
+    get_gdir_id 'Meetings'
+    PHD_GDIR_ID_MEETINGS=$get_gdir_id_retval
+    write_config
+  fi
+
+  copy_gdoc_template "$PHD_GDOC_ID_MEETING_MINUTES" "$PHD_GDIR_ID_MEETINGS" "$date"
+  ansi $ANSI_GREEN "Meeting document opened. Please press the 'Make a copy' button."
+}
+
+lint ()
+{
+  sethelp <<- EOF
+Usage: phd lint type /path/to/latex/file.tex
+
+Lints a LaTeX file, where type is one of:
+  - dups     scans for two duplicate words words in a row;
+  - tlas     scans for TLAs (three-letter acronyms);
+  - passive  scans for phrases that is written in the passive tense;
+  - weasel   scans for a lot of weasel words in your TeX file.
+
+Unless an absolute path is provided, the path to the LaTeX file autodefaults to
+a file relative to the Papers directory.
+EOF
+  local script="$PHD_SCRIPTDIR/$1"
+  local texfile=$2
+
+  if [[ ! -f "$script" ]]; then
+    ansi $ANSI_RED "ERROR: Unknown lint script '$1'. Run with -h or --help for linters." >&2
+    exit 1
+  fi
+
+  if [[ ! -f "$texfile" ]]; then
+    texfile="$PHD_PAPERSDIR/$texfile"
+    if [[ ! -f "$texfile" ]]; then
+      ansi $ANSI_RED "ERROR: Cannot find file at $texfile." >&2
+      exit 1
+    fi
+  fi
+
+  "$script" "$texfile"
+}
+
+update ()
+{
+  sethelp <<- EOF
+Usage: phd update
+
+Checks for the latest version.
+EOF
+
+  ansi $ANSI_BOLD "Checking for PhD Tool updates..."
+  chdir "$PHD_SCRIPTDIR"
+  git pull origin master
+}
+
+version ()
+{
+  sethelp <<- EOF
+Usage: phd version
+
+Prints out the current version of this tool.
+EOF
+  echo $PHD_VERSION
+}
+
+wordcount ()
+{
+  sethelp <<- EOF
+Usage: phd wordcount /path/to/latex/file.tex
+
+Performs a wordcount on a LaTeX file, or a group of related LaTeX files using
+the \input{another-file.tex} command.
+
+Unless an absolute path is provided, the path to the LaTeX file autodefaults to
+a file relative to the Papers directory.
+EOF
+  local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
+  local texcountpl="$PHD_SCRIPTDIR/texcount.pl"
+  local texfile=$1
+
+  if [[ ! -f "$texfile" ]]; then
+    texfile="$PHD_PAPERSDIR/$texfile"
+    if [[ ! -f "$texfile" ]]; then
+      ansi $ANSI_RED "ERROR: Cannot find file at $texfile." >&2
+      exit 1
+    fi
+  fi
+
+  ansi $ANSI_BOLD "Running word count on $texfile and its subfiles..."
+  chdir "$(greadlink -f "$(dirname "$texfile")")"
+  export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
+  "$recursiveinputawk" "$texfile" 2> /dev/null | perl "$texcountpl" -col -
+  unset PHD_RECUSRIVE_INPUT_AWK
+}
+
+help ()
+{
+  sethelp <<- EOF
+Usage: phd help [command]
+
+Shows a help message or help message of other commands.
+EOF
+  local help_command="$1"
+  if [[ -n $help_command ]]; then
+    HELP_ON=0
+    eval "$help_command" 2> /dev/null
+  fi
+
+  ansi $ANSI_BOLD "Alex's PhD Tools (v$PHD_VERSION)"
+  ansi $ANSI_ITALIC "Helping struggling PhDs students organise their life since 2020"
+
+  cat <<- EOF
+
+Publication commands:
+  phd newpub [pubkey]
+  phd renamepub oldpubkey [newpubkey]
+  phd clonepub pubkey [newpubkey]
+  phd arxivpub pubkey
+  phd review pubkey
+  phd author pubkey
+
+Writing commands:
+  phd lint [dups|tlas|passive|weasel] file.tex
+  phd wordcount file.tex
+
+Other commands:
+  phd meeting [yyyy-mm-dd]
+  phd feedback [yyyy-mm-dd]
+  phd [command] [--help|-h]
+  phd open
+EOF
+}
+
+main ()
+{
+  HELP_ON=1
+  PHD_SCRIPTDIR=$(greadlink -f "$(dirname "$0")")
+  PHD_BASEDIR=$(greadlink -f "$(dirname "$0")"/..)
+  PHD_PAPERSDIR="${PHD_BASEDIR}/Papers"
+  PHD_COMMAND="$1"
+
+  source "${PHD_SCRIPTDIR}/config"
+
+  setup
+
+  for argv in "$@"; do :; done
+  local lastarg="$argv"
+  if [[ $lastarg == "--help" || $lastarg == "-h" ]]; then
+    HELP_ON=0
+  fi
+
+  shift
+  case "$PHD_COMMAND" in
+  newpub)     newpub "$@";;
+  touch)      newpub "$@";;
+  new)        newpub "$@";;
+
+  renamepub)  renamepub "$@";;
+  mvpub)      renamepub "$@";;
+  mv)         renamepub "$@";;
+
+  clonepub)   clonepub "$@";;
+  cppub)      clonepub "$@";;
+  cp)         clonepub "$@";;
+
+  arxivpub)   arxivpub "$@";;
+  arxiv)      arxivpub "$@";;
+
+  flagpub)    flagpub "$@";;
+  flag)       flagpub "$@";;
+
+  review)     reviewpub "$@";;
+  author)     authorpub "$@";;
+
+  help)       help "$@";;
+  wordcount)  wordcount "$@";;
+  open)       phdopen "$@";;
+  lint)       lint "$@";;
+  feedback)   feedback "$@";;
+
+  meeting)    meeting "$@";;
+  meet)       meeting "$@";;
+
+  *)          help "$@";;
+  esac
+}
+
+if [[ -z "$PHD_INSTALLER" ]]; then
+  main "$@"
+else
+  install
+fi
