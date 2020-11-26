@@ -890,16 +890,16 @@ EOF
 lint ()
 {
   sethelp <<- EOF
-Usage: phd lint type /path/to/latex/file.tex
+Usage: phd lint [type] [pubkey|/path/to/latex/file.tex]
 
 Lints a LaTeX file, where type is one of:
-  - dups     scans for two duplicate words words in a row;
-  - tlas     scans for TLAs (three-letter acronyms);
-  - passive  scans for phrases that is written in the passive tense;
-  - weasel   scans for a lot of weasel words in your TeX file.
+  - dups     scans for two duplicate *words words* in a row;
+  - tlas     scans for *TLAs* (three-letter acronyms);
+  - passive  scans for phrases that *is written* in the passive tense;
+  - weasel   scans for *a lot* of weasel words in your TeX file.
 
 Unless an absolute path is provided, the path to the LaTeX file autodefaults to
-a file relative to the Papers directory.
+a file relative to the Papers directory. Or uses the default pubkey LaTeX file.
 EOF
   local script="$PHD_SCRIPTDIR/$1"
   local texfile=$2
@@ -958,10 +958,10 @@ EOF
 wordcount ()
 {
   sethelp <<- EOF
-Usage: phd wordcount /path/to/latex/file.tex
+Usage: phd wordcount [pubkey|/path/to/latex/file.tex]
 
 Performs a wordcount on a LaTeX file, or a group of related LaTeX files using
-the \input{another-file.tex} command.
+the \input{another-file.tex} command. Or uses the default pubkey LaTeX file.
 
 Unless an absolute path is provided, the path to the LaTeX file autodefaults to
 a file relative to the Papers directory.
@@ -1016,8 +1016,8 @@ Publication commands:
   phd author pubkey
 
 Writing commands:
-  phd lint [dups|tlas|passive|weasel] file.tex
-  phd wordcount file.tex
+  phd lint [dups|tlas|passive|weasel] [pubkey|file.tex]
+  phd wordcount [pubkey|file.tex]
 
 Other commands:
   phd meeting [yyyy-mm-dd]
