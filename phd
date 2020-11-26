@@ -277,7 +277,7 @@ find_pub ()
 pubkey_valid ()
 {
   local pubkey=$1
-  existing_pubkeys=$("find $PHD_PAPERSDIR -name $pubkey 2> /dev/null" | wc -l)
+  existing_pubkeys=$(find "$PHD_PAPERSDIR" -name "$pubkey" 2> /dev/null | wc -l)
   if [[ existing_pubkeys -gt 0 ]]; then
     ansi $ANSI_RED "ERROR: A pubkey with a name '$pubkey' already exists. Please try again." >&2
     echo "Location: $(find "$PHD_PAPERSDIR" -name "$pubkey")."
