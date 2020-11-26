@@ -270,7 +270,7 @@ find_pub ()
   if [[ -z "$pubkey" ]]; then
     return 1
   fi
-  find_pub_retval=$(find "$PHD_PAPERSDIR" -name "$pubkey" -not -path "$PHD_PAPERSDIR/arxiv")
+  find_pub_retval=$(find "$PHD_PAPERSDIR" -name "$pubkey" | grep -v arxiv)
   return 0
 }
 
