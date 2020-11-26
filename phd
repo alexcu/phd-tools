@@ -677,7 +677,7 @@ EOF
   fi
 
   local pubdir="$find_pub_retval"
-  mv $pubdir "$PHD_PAPERSDIR/$flag"
+  mv "$pubdir" "$PHD_PAPERSDIR/$flag"
   ansi $ANSI_GREEN "Moved '$pubkey' to '$flag' papers"
 }
 
