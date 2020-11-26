@@ -380,7 +380,7 @@ EOF
 
   ansi $ANSI_BOLD "Creating a new repo '$newpubkey' with flag 'inprogress'..."
   chdir "$PHD_PAPERSDIR/inprogress"
-  gh repo create "$newpubkey" -y --private --enable-issues=false --enable-wiki=false --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+  gh repo create "$newpubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
   unchdir
 
   if [[ "$?" -ne 0 ]]; then
@@ -556,7 +556,7 @@ EOF
 
   ansi $ANSI_BOLD "Creating a new repo '$pubkey'..."
   chdir "$PHD_PAPERSDIR/inprogress"
-  gh repo create "$pubkey" -y --private --enable-issues=false --enable-wiki=false --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+  gh repo create "$pubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
   unchdir
 
   if [[ "$?" -ne 0 ]]; then
