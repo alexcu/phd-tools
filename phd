@@ -484,14 +484,14 @@ EOF
 
   ansi $ANSI_BOLD "(1/$steps) Renaming '$oldpubkey' to '$newpubkey' locally..."
   mv "$old_pubdir" "$new_pubdir"
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not execute mv command. Please report this." >&2
     exit 1
   fi
 
   ansi $ANSI_BOLD "(2/$steps) Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
   mv "$new_pubdir/$oldpubkey.tex" "$new_pubdir/$newpubkey.tex"
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename '$oldpubkey.tex' to '$newpubkey.tex' command. Please report this." >&2
     exit 1
   fi
@@ -510,7 +510,7 @@ EOF
   git remote set-url origin "$new_gitremote"
   unchdir
 
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not push changes to GitHub. Please report this." >&2
     exit 1
   fi
@@ -604,21 +604,21 @@ EOF
   fi
 
   git pull origin master
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not pull contents of repo '$pubkey.tex'. Please report this." >&2
     exit 1
   fi
 
   ansi $ANSI_BOLD "(3/$steps) Renaming template 'main.tex' to '$pubkey.tex'..."
   mv main.tex "$pubkey.tex"
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$pubkey.tex' command. Please report this." >&2
     exit 1
   fi
 
   ansi $ANSI_BOLD "(4/$steps) Removing 'README.md'..."
   rm README.md
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not remove 'README.md'. Please report this." >&2
     exit 1
   fi
@@ -628,7 +628,7 @@ EOF
   git add "$pubkey.tex"
   git commit -am "Rename 'main.tex' to '$pubkey.tex'"
   git push origin master
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not push changes to GitHub. Please report this." >&2
     exit 1
   fi
@@ -707,7 +707,7 @@ EOF
   ansi $ANSI_BOLD "(1/$steps) Making arXiv directory at $arxiv_dir..."
   mkdir "$arxiv_dir"
 
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not create directory '$arxiv_dir'. Please report this." >&2
     exit 1
   fi
@@ -715,7 +715,7 @@ EOF
   ansi $ANSI_BOLD "(2/$steps) Copying all non-TeX files over..."
   rsync -avq --exclude='.git' --exclude='*.tex' --exclude='*.bib' "$pubdir/" "$arxiv_dir"
 
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rsync correctly. Please report this." >&2
     exit 1
   fi
@@ -726,7 +726,7 @@ EOF
   chdir "$pubdir"
   export PHD_RECUSRIVE_INPUT_AWK=$recursiveinputawk
   "$recursiveinputawk" "$pubkey.tex" 2> /dev/null | gsed '/^\s*%/d' | cat -s > "$arxiv_dir/$pubkey.tex"
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not compile merged TeX file. Please report this." >&2
     exit 1
   fi
@@ -764,7 +764,7 @@ EOF
   ansi $ANSI_BOLD "(5/$steps) Renaming default 'output.bbl' to '$pubkey.bbl'..."
   mv "$arxiv_dir/output.bbl" "$arxiv_dir/$pubkey.bbl"
 
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename 'output.bbl' to '$pubkey.bbl'. Please report this." >&2
     exit 1
   fi
@@ -772,7 +772,7 @@ EOF
   ansi $ANSI_BOLD "(6/$steps) Preparing ZIP to be uploaded into arXiv..."
   chdir "$arxiv_dir"
   zip -r "$arxiv_zip" .
-  if [[ $? -ne 0 ]]; then
+  if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not ZIP contents for arXiv. Please report this." >&2
     exit 1
   fi
