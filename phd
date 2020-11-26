@@ -442,6 +442,8 @@ EOF
     exit 1
   fi
 
+  local steps=6
+
   local newpubkey=$2
   if [[ -z $newpubkey ]]; then
     pubkeywizard
@@ -455,7 +457,7 @@ EOF
   local old_pubdir="$find_pub_retval"
   local new_pubdir="$find_pub_retval/../$newpubkey"
 
-  ansi $ANSI_BOLD "Renaming '$oldpubkey' to '$newpubkey' locally..."
+  ansi $ANSI_BOLD "(1/$steps) Renaming '$oldpubkey' to '$newpubkey' locally..."
   echo "mv $old_pubdir $new_pubdir"
   mv "$old_pubdir" "$new_pubdir"
 
@@ -464,21 +466,21 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
+  ansi $ANSI_BOLD "(2/$steps) Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
   mv "$new_pubdir/$oldpubkey.tex" "$new_pubdir/$newpubkey.tex"
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename '$oldpubkey.tex' to '$newpubkey.tex' command. Please report this." >&2
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Updating remote GitHub 'origin' URL for '$newpubkey'"
+  ansi $ANSI_BOLD "(3/$steps) Updating remote GitHub 'origin' URL for '$newpubkey'"
   chdir "$new_pubdir"
   local old_gitremote
   local new_gitremote
   old_gitremote=$(git config --get remote.origin.url)
   new_gitremote=$(echo "$old_gitremote" | gsed -E "s/[^/]+\.git$/$newpubkey\.git/g")
   git remote set-url origin "$new_gitremote"
-  ansi $ANSI_BOLD "Commiting change of name and pushing to GitHub..."
+  ansi $ANSI_BOLD "(4/$steps) Commiting change of name and pushing to GitHub..."
   git commit -am "Rename '$oldpubkey.tex' to '$newpubkey.tex'"
   git push origin master
   unchdir
@@ -492,7 +494,7 @@ EOF
   local gh_open_settings
   gh_repo=$(echo "$old_gitremote" |  gsed -E "s/^[^:]+:([^:]+)\.git$/\1/g")
   gh_open_settings="https://github.com/$gh_repo/settings"
-  ansi $ANSI_BOLD "Please update GitHub settings to rename the repo '$oldpubkey' to '$newpubkey'"
+  ansi $ANSI_BOLD "(5/$steps) Please update GitHub settings to rename the repo '$oldpubkey' to '$newpubkey'"
   cat <<- EOF
 To continue, you must open up GitHub's settings page for the old repo named
 '$oldpubkey' and manually change its repo name to '$newpubkey'.
@@ -504,7 +506,7 @@ EOF
   read -rp "Press enter to open the GitHub settings page for this repo..."
   open "$gh_open_settings"
 
-  ansi $ANSI_BOLD "Please rename Overleaf project from '$oldpubkey' to '$newpubkey'"
+  ansi $ANSI_BOLD "(6/$steps) Please rename Overleaf project from '$oldpubkey' to '$newpubkey'"
   cat <<- EOF
 To continue, you must open up the Overleaf Dashboard, click on the checkbox
 next to the project listed as '$oldpubkey', then click 'More' (in the top
@@ -517,6 +519,7 @@ https://bit.ly/2HBakyi.
 EOF
   read -rp "Press enter now to open Overleaf..."
   open "$OVERLEAF_URL"
+  ansi $ANSI_GREEN "Done! Your paper '$oldpubkey' was renamed to '$newpubkey'."
 }
 
 newpub ()
