@@ -702,7 +702,9 @@ EOF
     rm -rf "$arxiv_dir" "$arxiv_zip"
   fi
 
-  ansi $ANSI_BOLD "Making arXiv directory at $arxiv_dir..."
+  local steps=6
+
+  ansi $ANSI_BOLD "(1/$steps) Making arXiv directory at $arxiv_dir..."
   mkdir "$arxiv_dir"
 
   if [[ $? -ne 0 ]]; then
@@ -710,7 +712,7 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Copying all non-TeX files to $arxiv_dir from $pubdir..."
+  ansi $ANSI_BOLD "(2/$steps) Copying all non-TeX files over..."
   rsync -avq --exclude='.git' --exclude='*.tex' --exclude='*.bib' "$pubdir/" "$arxiv_dir"
 
   if [[ $? -ne 0 ]]; then
@@ -718,7 +720,7 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Merging all TeX files into '$pubkey.tex' with all comments stripped..."
+  ansi $ANSI_BOLD "(3/$steps) Merging all TeX files into '$pubkey.tex' with all comments stripped..."
 
   local recursiveinputawk="$PHD_SCRIPTDIR/recursiveinput.awk"
   chdir "$pubdir"
@@ -730,11 +732,11 @@ EOF
   fi
   unchdir
 
-  ansi $ANSI_BOLD "arXiv requires all .bbl files to be added for each .bib file"
+  ansi $ANSI_BOLD "(4/$steps) arXiv requires all .bbl files to be added for each .bib file"
   local bib_files
   local count_bibs
   bbl_files=$(ls -1 "$pubdir"/*.bib | gsed -E "s/.bib/.bbl/g")
-  count_bibs="$bib_files | wc -l"
+  count_bibs=$($bib_files | wc -l)
   cat <<-EOF
 You have $count_bibs .bib files. Please open up the project '$pubkey' in
 Overleaf and *recompile* your project. Next, click on the 'Logs & Output Files'
@@ -759,7 +761,7 @@ EOF
     read -rp "Press enter once you have placed all $count_bibs .bbl file(s) in $arxiv_dir..."
   done
 
-  ansi $ANSI_BOLD "Renaming default 'output.bbl' to '$pubkey.bbl'..."
+  ansi $ANSI_BOLD "(5/$steps) Renaming default 'output.bbl' to '$pubkey.bbl'..."
   mv "$arxiv_dir/output.bbl" "$arxiv_dir/$pubkey.bbl"
 
   if [[ $? -ne 0 ]]; then
@@ -767,7 +769,7 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Preparing ZIP to be uploaded into arXiv..."
+  ansi $ANSI_BOLD "(6/$steps) Preparing ZIP to be uploaded into arXiv..."
   chdir "$arxiv_dir"
   zip -r "$arxiv_zip" .
   if [[ $? -ne 0 ]]; then
