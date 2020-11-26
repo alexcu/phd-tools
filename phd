@@ -458,14 +458,14 @@ EOF
     exit 1
   fi
 
+  local old_pubdir
+  local new_pubdir
   find_pub "$oldpubkey"
-  local old_pubdir="$find_pub_retval"
-  local new_pubdir="$find_pub_retval/../$newpubkey"
+  old_pubdir="$find_pub_retval"
+  new_pubdir="$(dirname "$find_pub_retval")/$newpubkey"
 
   ansi $ANSI_BOLD "(1/$steps) Renaming '$oldpubkey' to '$newpubkey' locally..."
-  echo "mv $old_pubdir $new_pubdir"
   mv "$old_pubdir" "$new_pubdir"
-
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not execute mv command. Please report this." >&2
     exit 1
