@@ -42,12 +42,12 @@ sethelp ()
 
 chdir ()
 {
-  pushd "$1" || (ansi $ANSI_RED "Cannot work within '$1'. Please report this error." >&2 && exit 1)
+  pushd "$1" > /dev/null || (ansi $ANSI_RED "Cannot work within '$1'. Please report this error." >&2 && exit 1)
 }
 
 unchdir ()
 {
-  popd || (ansi $ANSI_RED "Cannot return to previous working directory. Please report this error." >&2 && exit 1)
+  popd > /dev/null || (ansi $ANSI_RED "Cannot return to previous working directory. Please report this error." >&2 && exit 1)
 }
 
 write_config ()
