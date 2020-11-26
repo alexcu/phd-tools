@@ -389,7 +389,7 @@ EOF
 
   ansi $ANSI_BOLD "(1/$steps) Creating a new repo '$newpubkey' with flag 'inprogress'..."
   chdir "$PHD_PAPERSDIR/inprogress"
-  gh repo create "$newpubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
+  gh repo create "$newpubkey" -y --private
   if [[ "$?" -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not create a repo. Please report this issue." >&2
     exit 1
