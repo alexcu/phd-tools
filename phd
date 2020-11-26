@@ -554,7 +554,7 @@ EOF
 
   local steps=6
 
-  ansi $ANSI_BOLD "(1/$steps) Creating a new repo '$pubkey'..."
+  ansi $ANSI_BOLD "(1/$steps) Creating a new repo '$pubkey' on GitHub..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$pubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
   if [[ "$?" -ne 0 ]]; then
