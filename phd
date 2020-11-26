@@ -937,8 +937,13 @@ Writing commands:
 
 Other commands:
   phd meeting [yyyy-mm-dd]
-  phd [command] [--help|-h]
   phd open
+
+Tool commands:
+  phd help
+  phd [command] [--help|-h]
+  phd update
+  phd version
 EOF
 }
 
@@ -984,13 +989,16 @@ main ()
   review)     reviewpub "$@";;
   author)     authorpub "$@";;
 
-  help)       help "$@";;
   wordcount)  wordcount "$@";;
-  open)       phdopen "$@";;
   lint)       lint "$@";;
 
   meeting)    meeting "$@";;
   meet)       meeting "$@";;
+  open)       phdopen "$@";;
+
+  help)       help "$@";;
+  version)    version "$@";;
+  update)     update "$@";;
 
   *)          help "$@";;
   esac
