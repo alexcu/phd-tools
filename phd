@@ -274,7 +274,7 @@ find_pub ()
   return 0
 }
 
-pubkey_valid ()
+unique_pubkey ()
 {
   local pubkey=$1
   existing_pubkeys=$(find "$PHD_PAPERSDIR" -name "$pubkey" 2> /dev/null | wc -l)
@@ -335,7 +335,7 @@ EOF
     fi
     pubkey=$(echo "$pubkey" | tr "[:upper:]" "[:lower:]" | tr ' ' '-')
 
-    if ! pubkey_valid "$pubkey"; then
+    if ! unique_pubkey "$pubkey"; then
       exit 1
     fi
 
@@ -375,7 +375,7 @@ EOF
     pubkeywizard
     newpubkey=$pubkeywizard_retval
   fi
-  if ! pubkey_valid "$newpubkey"; then
+  if ! unique_pubkey "$newpubkey"; then
     exit 1
   fi
 
@@ -472,7 +472,7 @@ EOF
     pubkeywizard
     newpubkey=$pubkeywizard_retval
   fi
-  if ! pubkey_valid "$newpubkey"; then
+  if ! unique_pubkey "$newpubkey"; then
     exit 1
   fi
 
@@ -576,7 +576,7 @@ EOF
     pubkey=$pubkeywizard_retval
   fi
 
-  if ! pubkey_valid "$pubkey"; then
+  if ! unique_pubkey "$pubkey"; then
     exit 1
   fi
 
@@ -659,7 +659,7 @@ EOF
   local pubkey=$1
   local flag=$2
 
-  if ! pubkey_valid "$pubkey"; then
+  if ! unique_pubkey "$pubkey"; then
     exit 1
   fi
 
@@ -692,7 +692,6 @@ EOF
     exit 1
   fi
   local pubdir="$find_pub_retval"
-
   local arxiv_dir="$PHD_PAPERSDIR/arxiv/$pubkey"
   local arxiv_zip="$PHD_PAPERSDIR/arxiv/$pubkey.zip"
 
@@ -794,7 +793,7 @@ Additionally asks for the .eml file containing the reviewer feedback email for
 record-keeping purposes.
 EOF
   local pubkey=$1
-  if ! pubkey_valid "$pubkey"; then
+  if ! unique_pubkey "$pubkey"; then
     exit 1
   fi
 
@@ -837,7 +836,7 @@ co-authors during your PhD candidature. These forms should be signed by all
 authors and at the time of publication acceptance.
 EOF
   local pubkey=$1
-  if ! pubkey_valid "$pubkey"; then
+  if ! unique_pubkey "$pubkey"; then
     exit 1
   fi
 
