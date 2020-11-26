@@ -414,7 +414,8 @@ EOF
 
   ansi $ANSI_BOLD "(4/$steps) Pushing copied files to GitHub under repo '$newpubkey'..."
   chdir "$new_pubdir"
-  git add -am "Intial commit from repo clone of '$pubkey'"
+  git add .
+  git commit -am "Intial commit from repo clone of '$pubkey'"
   git push origin master
   unchdir
 
