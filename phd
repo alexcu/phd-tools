@@ -933,7 +933,6 @@ Writing commands:
 
 Other commands:
   phd meeting [yyyy-mm-dd]
-  phd feedback [yyyy-mm-dd]
   phd [command] [--help|-h]
   phd open
 EOF
@@ -984,7 +983,6 @@ main ()
   wordcount)  wordcount "$@";;
   open)       phdopen "$@";;
   lint)       lint "$@";;
-  feedback)   feedback "$@";;
 
   meeting)    meeting "$@";;
   meet)       meeting "$@";;
