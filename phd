@@ -908,8 +908,11 @@ EOF
     exit 1
   fi
 
+  find_pub "$texfile" # treat input as pubkey...
+  local pubdir="$find_pub_retval"
+
   if [[ ! -f "$texfile" ]]; then
-    texfile="$PHD_PAPERSDIR/$texfile"
+    texfile="$pubdir/$texfile.tex"
     if [[ ! -f "$texfile" ]]; then
       ansi $ANSI_RED "ERROR: Cannot find file at $texfile." >&2
       exit 1
