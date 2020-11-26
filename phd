@@ -278,7 +278,7 @@ pubkey_valid ()
 {
   local pubkey=$1
   existing_pubkeys=$(find "$PHD_PAPERSDIR" -name "$pubkey" 2> /dev/null | wc -l)
-  if [[ existing_pubkeys -gt 0 ]]; then
+  if [[ "$existing_pubkeys" -gt 0 ]]; then
     ansi $ANSI_RED "ERROR: A pubkey with a name '$pubkey' already exists. Please try again." >&2
     echo "Location: $(find "$PHD_PAPERSDIR" -name "$pubkey")."
     return 1
@@ -335,7 +335,7 @@ EOF
     fi
     pubkey=$(echo "$pubkey" | tr "[:upper:]" "[:lower:]" | tr ' ' '-')
 
-    if pubkey_valid "$pubkey" -ne 0; then
+    if ! pubkey_valid "$pubkey"; then
       exit 1
     fi
 
@@ -370,7 +370,7 @@ EOF
     pubkeywizard
     newpubkey=$pubkeywizard_retval
   fi
-  if pubkey_valid "$newpubkey" -ne 0; then
+  if ! pubkey_valid "$newpubkey"; then
     exit 1
   fi
 
@@ -448,7 +448,7 @@ EOF
     pubkeywizard
     newpubkey=$pubkeywizard_retval
   fi
-  if pubkey_valid "$newpubkey" -ne 0; then
+  if ! pubkey_valid "$newpubkey"; then
     exit 1
   fi
 
@@ -550,7 +550,7 @@ EOF
     pubkey=$pubkeywizard_retval
   fi
 
-  if pubkey_valid "$pubkey" -ne 0; then
+  if ! pubkey_valid "$pubkey"; then
     exit 1
   fi
 
@@ -608,7 +608,7 @@ EOF
   local pubkey=$1
   local flag=$2
 
-  if pubkey_valid "$pubkey" -ne 0; then
+  if ! pubkey_valid "$pubkey"; then
     exit 1
   fi
 
@@ -636,7 +636,7 @@ removing all comments and consolidating all .tex files (using \input) into a
 single file, main.tex. Zips these files up ready to be uploaded to arXiv.
 EOF
   local pubkey=$1
-  if pubkey_valid "$pubkey" -ne 0; then
+  if ! pubkey_valid "$pubkey"; then
     exit 1
   fi
   find_pub "$oldpubkey"
@@ -745,7 +745,7 @@ Additionally asks for the .eml file containing the reviewer feedback email for
 record-keeping purposes.
 EOF
   local pubkey=$1
-  if pubkey_valid "$pubkey" -ne 0; then
+  if ! pubkey_valid "$pubkey"; then
     exit 1
   fi
 
@@ -788,7 +788,7 @@ co-authors during your PhD candidature. These forms should be signed by all
 authors and at the time of publication acceptance.
 EOF
   local pubkey=$1
-  if pubkey_valid "$pubkey" -ne 0; then
+  if ! pubkey_valid "$pubkey"; then
     exit 1
   fi
 
