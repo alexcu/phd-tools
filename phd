@@ -662,21 +662,21 @@ EOF
   local pubkey=$1
   local flag=$2
 
-  if ! find_pub "$pubkey"; then
-    ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
-    exit 1
-  fi
-
   case "$flag" in
   abandoned)  ;;
   inprogress) ;;
   published)  ;;
   rejected)   ;;
+  arxiv)  ansi $ANSI_RED "ERROR: Please use the arxivpub command for this purpose." >&2 && exit 1 ;;
   *) ansi $ANSI_RED "ERROR: Unknown flag or no flag provided." >&2 && exit 1 ;;
   esac
 
-  find_pub "$pubkey"
-  local pubdir=find_pub_retval
+  if ! find_pub "$pubkey"; then
+    ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
+    exit 1
+  fi
+
+  local pubdir="$find_pub_retval"
   mv $pubdir "$PHD_PAPERSDIR/$flag"
   ansi $ANSI_GREEN "Moved '$pubkey' to '$flag' papers"
 }
