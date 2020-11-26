@@ -921,7 +921,7 @@ EOF
   fi
 
   export PHD_RECUSRIVE_INPUT_AWK=\"$recursiveinputawk\"
-  local temp=$(mktmp)
+  local temp=$(mktemp)
   "$recursiveinputawk" "$texfile" 2> /dev/null > "$temp"
   unset PHD_RECUSRIVE_INPUT_AWK
 
