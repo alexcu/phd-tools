@@ -360,7 +360,12 @@ you select a new pubkey.
 EOF
 
   local pubkey=$1
-  if find_pub "$0" -ne 0; then
+  if [[ -z "$pubkey" ]]; then
+    ansi $ANSI_RED "ERROR: No pubkey provided! See help." >&2
+    exit 1
+  fi
+
+  if ! find_pub "$0"; then
     ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
     exit 1
   fi
@@ -374,11 +379,15 @@ EOF
     exit 1
   fi
 
-  find_pub "$pubkey"
-  local pubdir="$find_pub_retval"
-  local new_pubdir="$find_pub_retval/../$newpubkey"
+  local steps=5
 
-  ansi $ANSI_BOLD "Creating a new repo '$newpubkey' with flag 'inprogress'..."
+  local pubdir
+  local new_pubdir
+  find_pub "$pubkey"
+  pubdir="$find_pub_retval"
+  new_pubdir="$(dirname "$find_pub_retval")/$newpubkey"
+
+  ansi $ANSI_BOLD "(1/$steps) Creating a new repo '$newpubkey' with flag 'inprogress'..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$newpubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
   if [[ "$?" -ne 0 ]]; then
@@ -387,7 +396,7 @@ EOF
   fi
   unchdir
 
-  ansi $ANSI_BOLD "Copying files from '$oldpubkey' to '$newpubkey'..."
+  ansi $ANSI_BOLD "(2/$steps) Copying files from '$pubkey' to '$newpubkey'..."
   rsync -avq --exclude='.git' "$pubdir/" "$new_pubdir"
 
   if [[ "$?" -ne 0 ]]; then
@@ -395,15 +404,15 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Renaming '$oldpubkey.tex' to '$newpubkey.tex'..."
+  ansi $ANSI_BOLD "(3/$steps) Renaming '$pubkey.tex' to '$newpubkey.tex'..."
   mv "$new_pubdir/$pubkey.tex" "$new_pubdir/$newpubkey.tex"
 
   if [[ "$?" -ne 0 ]]; then
-    ansi $ANSI_RED "ERROR: Could not remame '$oldpubkey.tex' to '$newpubkey.tex'. Please report this." >&2
+    ansi $ANSI_RED "ERROR: Could not remame '$pubkey.tex' to '$newpubkey.tex'. Please report this." >&2
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Pushing copied files to GitHub under repo '$newpubkey'..."
+  ansi $ANSI_BOLD "(4/$steps) Pushing copied files to GitHub under repo '$newpubkey'..."
   chdir "$new_pubdir"
   git add -am "Intial commit from repo clone of '$pubkey'"
   git push origin master
@@ -415,7 +424,7 @@ EOF
   fi
 
   ansi $ANSI_GREEN "Pushed copied files to '$newpubkey'!"
-  ansi $ANSI_BOLD "Please import repo '$newpubkey' into a new Overleaf project"
+  ansi $ANSI_BOLD "(5/$steps) Please import repo '$newpubkey' into a new Overleaf project"
   cat <<- EOF
 To continue, import the repository from GitHub into Overleaf by clicking on the
 'New Project' button in the top left, then 'Import from GitHub' and search for
