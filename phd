@@ -552,7 +552,9 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Creating a new repo '$pubkey'..."
+  local steps=6
+
+  ansi $ANSI_BOLD "(1/$steps) Creating a new repo '$pubkey'..."
   chdir "$PHD_PAPERSDIR/inprogress"
   gh repo create "$pubkey" -y --private --template $PHD_GHUB_ID_PAPERS_TEMPLATE
   if [[ "$?" -ne 0 ]]; then
@@ -563,7 +565,7 @@ EOF
 
   ansi $ANSI_GREEN "Created '$pubkey' on GitHub and set up on '$PHD_PAPERSDIR/inprogress."
 
-  ansi $ANSI_BOLD "Pulling down contents of '$pubkey' from GitHub..."
+  ansi $ANSI_BOLD "(2/$steps) Pulling down contents of '$pubkey' from GitHub..."
   chdir "$PHD_PAPERSDIR/inprogress/$pubkey"
 
   # gh repo create does not honour its own config setting!
@@ -579,21 +581,23 @@ EOF
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Renaming template 'main.tex' to '$pubkey.tex'..."
+  ansi $ANSI_BOLD "(3/$steps) Renaming template 'main.tex' to '$pubkey.tex'..."
   mv main.tex "$pubkey.tex"
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$pubkey.tex' command. Please report this." >&2
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Removing 'README.md'..."
+  ansi $ANSI_BOLD "(4/$steps) Removing 'README.md'..."
   rm README.md
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not remove 'README.md'. Please report this." >&2
     exit 1
   fi
 
-  ansi $ANSI_BOLD "Commiting change and pushing to GitHub..."
+  ansi $ANSI_BOLD "(5/$steps) Commiting changes and pushing to GitHub..."
+  git commit -am "Remove template README.md"
+  git add "$pubkey.tex"
   git commit -am "Rename 'main.tex' to '$pubkey.tex'"
   git push origin master
   if [[ $? -ne 0 ]]; then
@@ -602,7 +606,7 @@ EOF
   fi
   unchdir
 
-  ansi $ANSI_BOLD "Please import repo '$pubkey' into a new Overleaf project"
+  ansi $ANSI_BOLD "(6/$steps) Please import repo '$pubkey' into a new Overleaf project"
   cat <<- EOF
 To continue, import the repository from GitHub into Overleaf by clicking on the
 'New Project' button in the top left, then 'Import from GitHub' and search for
