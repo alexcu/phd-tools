@@ -561,10 +561,18 @@ EOF
   fi
   unchdir
 
-  ansi $ANSI_GREEN "Created '$pubkey' on GitHub and cloned under '$PHD_PAPERSDIR/inprogress."
+  ansi $ANSI_GREEN "Created '$pubkey' on GitHub and set up on '$PHD_PAPERSDIR/inprogress."
 
   ansi $ANSI_BOLD "Pulling down contents of '$pubkey' from GitHub..."
   chdir "$PHD_PAPERSDIR/inprogress/$pubkey"
+
+  # gh repo create does not honour its own config setting!
+  if [[ $(gh config get git_protocol) == "ssh" ]]; then
+    echo "Updating Git remote origin URL to use ssh..."
+    local gh_ssh_url=$(git config --get remote.origin.url | gsed -E "s/https:\/\/github.com\//git@github.com:/g")
+    git remote set-url origin "$gh_ssh_url"
+  fi
+
   git pull origin master
   if [[ $? -ne 0 ]]; then
     ansi $ANSI_RED "ERROR: Could not pull contents of repo '$pubkey.tex'. Please report this." >&2
