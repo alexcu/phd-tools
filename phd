@@ -104,8 +104,8 @@ copy_gdoc_template ()
   local source_template_id=$1
   local destination_folder_id=$2
   local title=$3
-  local gdoc_type
-  [[ -z $1 ]] && gdoc_type="document" || gdoc_type=$4
+  local gdoc_type=$4
+  [[ -z $4 ]] && gdoc_type="document" || gdoc_type=$4
   local url="https://docs.google.com/$gdoc_type/d/$source_template_id/copy?id=$source_template_id&copyCollaborators=false&copyComments=false&includeResolvedCommentsOnCopy=false&title=$title&copyDestination=$destination_folder_id"
 
   read -rp "About to create a new document named '$title'. Press enter to continue..."
@@ -829,7 +829,7 @@ EOF
     write_config
   fi
 
-  copy_gdoc_template "$PHD_GDOC_ID_REVIEW_FEEDBACK" "$PHD_GDIR_ID_REVIEWS" "$pubkey" "spreadsheet"
+  copy_gdoc_template "$PHD_GDOC_ID_REVIEW_FEEDBACK" "$PHD_GDIR_ID_REVIEWS" "$pubkey" "spreadsheets"
   ansi $ANSI_GREEN "Reviewer feedback spreadsheet opened. Please press the 'Make a copy' button."
   echo "Please refer to https://bit.ly/33ebKGF for methods on how to break down reviewer feedback."
 }
