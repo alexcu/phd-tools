@@ -662,7 +662,8 @@ EOF
   local pubkey=$1
   local flag=$2
 
-  if ! unique_pubkey "$pubkey"; then
+  if ! find_pub "$pubkey"; then
+    ansi $ANSI_RED "ERROR: No such publication with pubkey '$pubkey' exists." >&2
     exit 1
   fi
 
