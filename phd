@@ -587,9 +587,9 @@ EOF
   fi
 
   ansi $ANSI_BOLD "Removing 'README.md'..."
-  mv main.tex "$pubkey.tex"
+  rm README.md
   if [[ $? -ne 0 ]]; then
-    ansi $ANSI_RED "ERROR: Could not rename 'main.tex' to '$pubkey.tex' command. Please report this." >&2
+    ansi $ANSI_RED "ERROR: Could not remove 'README.md'. Please report this." >&2
     exit 1
   fi
 
