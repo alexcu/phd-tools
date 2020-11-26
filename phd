@@ -238,6 +238,7 @@ EOF
   ansi $ANSI_GREEN "OKAY: Set up your PhD base directory at '$PHD_BASEDIR'."
 
   ansi $ANSI_BOLD "(4/$steps) Installing necessary software..."
+  PHD_CONFIG="$PHD_SCRIPTDIR/config"
   setup
 
   ansi $ANSI_BOLD "(5/$steps) Logging you into GitHub CLI. Refer to GitHub CLI's steps..."
