@@ -736,7 +736,7 @@ EOF
   local bib_files
   local count_bibs
   bbl_files=$(ls -1 "$pubdir"/*.bib | gsed -E "s/.bib/.bbl/g")
-  count_bibs=$($bib_files | wc -l)
+  count_bibs=$($bib_files | wc -l | gsed "s/\s//g")
   cat <<-EOF
 You have $count_bibs .bib files. Please open up the project '$pubkey' in
 Overleaf and *recompile* your project. Next, click on the 'Logs & Output Files'
