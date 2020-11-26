@@ -151,7 +151,7 @@ install ()
   local gdfs_exists=1
   local gbas_exists=1
 
-  local steps=6
+  local steps=7
 
   ansi $ANSI_BOLD "(1/$steps) Checking if Google Drive File System (GDFS) is mounted..."
   if [[ ! -d "$gdfs_mount_dir" ]]; then
