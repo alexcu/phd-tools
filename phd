@@ -4,6 +4,7 @@ PHD_VERSION="0.1"
 
 PHD_GDOC_ID_MEETING_MINUTES=12Y79ci74ykhVJuS7kOQc5ge44owl4E4ntQK8Osy8fRE
 PHD_GDOC_ID_REVIEW_FEEDBACK=1_HWrqVFU-W8_mq_OHjr4h2wzBfMor7yjy3rcX-Cs_JU
+PHD_GDOC_ID_AUTHORSHIP_STMT=1LDKBHWtG_LV8v0TPnjjtPMAiorSfe4-B6njSHXIhdyY
 PHD_GHUB_ID_PAPERS_TEMPLATE="https://github.com/alexcu/papers-template"
 PHD_GHUB_TEMPLATE_GIT="https://github.com/alexcu/phd-template.git"
 PHD_GHUB_TOOLS_GIT="https://github.com/alexcu/phd-tools.git"
@@ -854,7 +855,7 @@ EOF
     write_config
   fi
 
-  copy_gdoc_template "$PHD_GDOC_ID_MEETING_MINUTES" "$PHD_GDIR_ID_AUTHSTMTS" "$pubkey"
+  copy_gdoc_template "$PHD_GDOC_ID_AUTHORSHIP_STMT" "$PHD_GDIR_ID_AUTHSTMTS" "$pubkey"
   ansi $ANSI_GREEN "Authorship statement document opened. Please press the 'Make a copy' button."
 }
 
