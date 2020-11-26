@@ -967,8 +967,8 @@ EOF
 main ()
 {
   HELP_ON=1
-  PHD_SCRIPTDIR=$(greadlink -f "$(dirname "$0")")
-  PHD_BASEDIR=$(greadlink -f "$(dirname "$0")"/..)
+  PHD_SCRIPTDIR=$(greadlink -f "$(dirname "$(greadlink -f "$0")")")
+  PHD_BASEDIR=$(greadlink -f "$PHD_SCRIPTDIR"/..)
   PHD_CONFIG="${PHD_SCRIPTDIR}/config"
   PHD_PAPERSDIR="${PHD_BASEDIR}/Papers"
   PHD_COMMAND="$1"
