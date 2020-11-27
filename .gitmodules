@@ -1,0 +1,6 @@
+[submodule "phd-template"]
+	path = phd-template
+	url = https://github.com/alexcu/phd-template
+[submodule "papers-template"]
+	path = papers-template
+	url = https://github.com/alexcu/papers-template
