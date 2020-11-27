@@ -1009,7 +1009,7 @@ EOF
   fi
 
   ansi $ANSI_BOLD "Alex's PhD Tools (v$PHD_VERSION)"
-  ansi $ANSI_ITALIC "Helping struggling PhDs students organise their life since 2020"
+  ansi $ANSI_ITALIC "Helping struggling PhD students organise their life since 2020"
 
   cat <<- EOF
 
@@ -1017,6 +1017,7 @@ Publication commands:
   phd newpub [pubkey]
   phd renamepub oldpubkey [newpubkey]
   phd clonepub pubkey [newpubkey]
+  phd flagpub pubkey [abandoned|inprogress|published|rejected]
   phd arxivpub pubkey
   phd review pubkey
   phd author pubkey
