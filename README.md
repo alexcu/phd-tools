@@ -2,6 +2,8 @@
 
 **_Helping struggling PhD students organise their life since 2020_**
 
+<img alt="PhD Tools In Action" src="https://i.imgur.com/lhTHPcm.png">
+
 PhD Tools provides a suite of assistive tooling and LaTeX/Google Docs templates to help PhD students to organise their projects and orchestrate their research papers productively.
 
 The `phd` command line tool, written in bash, can help students coordinate a number of mundane tasks like:
