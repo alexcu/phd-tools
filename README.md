@@ -2,6 +2,14 @@
 
 **_Helping struggling PhD students organise their life since 2020_**
 
+---
+
+<div align="center">
+👉 While this project is no longer in active development,<br>contributions and improvements from current students are still very welcome 🙏❤
+</div>
+
+---
+
 <img alt="PhD Tools In Action" src="https://i.imgur.com/lhTHPcm.png">
 
 PhD Tools provides a suite of assistive tooling and LaTeX/Google Docs templates to help PhD students to organise their projects and orchestrate their research papers productively.
